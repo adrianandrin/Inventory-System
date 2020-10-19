@@ -1,0 +1,361 @@
+{% extends "dashboard/base.html" %} {% load static %} {% block content %}
+<style>
+  .dot {
+    height: 25px;
+    width: 25px;
+    border-color: black;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .modal {
+    display: none;
+    position: fixed;
+    z-index: 1;
+    padding-top: 100px;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgb(0, 0, 0);
+    background-color: rgba(0, 0, 0, 0.4);
+  }
+
+  .modal-content {
+    background-color: #fefefe;
+    margin: auto;
+    padding: 20px;
+    border: 1px solid #888;
+    width: 40%;
+    border-radius: 20px;
+  }
+
+  .close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+  }
+
+  .close:hover,
+  .close:focus {
+    color: black;
+    text-decoration: none;
+    cursor: pointer;
+  }
+</style>
+<!--Table -->
+<div class="flex justify-between mb-1">
+  <div>
+    <h1 class="font-bold text-4xl mb-2">Products</h1>
+  </div>
+  <div class="flex justify-between mr-6">
+    <form action="" method="POST" class="flex">
+      {% csrf_token %}
+      <p class="text-white font-bold py-2 pl-4 rounded m-5">Start Date:</p>
+      <input
+        type="date"
+        class="datepicker text-black font-bold py-2 pr-4 rounded mr-5 my-5"
+        id="#start_date"
+        name="start_date"
+        value="{{ start_date }}"
+      />
+      <p class="text-white font-bold py-2 pl-4 rounded m-5">End Date:</p>
+      <input
+        type="date"
+        class="datepicker text-black font-bold py-2 pr-4 rounded mr-5 my-5"
+        id="#end_date"
+        name="end_date"
+        value="{{ end_date }}"
+      />
+      <button
+        class="bg-red-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded my-5 ml-5 mx-2"
+        id="filter"
+        name="btnFilter"
+        type="submit"
+      >
+        Filter
+      </button>
+      <button
+        class="bg-red-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-5"
+        id="remove"
+        name="btnRemoveFilter"
+        type="submit"
+      >
+        Remove
+      </button>
+    </form>
+    <button
+      class="bg-green-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded m-5"
+      id="btnExport"
+    >
+      Export
+    </button>
+    <div>
+      <a
+        href="{% url 'dashboard-register_prod' %}"
+        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mt-5"
+        type="button"
+        >Add Product</a
+      >
+    </div>
+  </div>
+</div>
+
+<div class="container"></div>
+<div
+  id="recipients"
+  class="p-8 mt-6 lg:mt-0 rounded shadow bg-white text-color"
+>
+  <table
+    id="table"
+    class="stripe hover"
+    style="width: 100%; padding-top: 1em; padding-bottom: 1em"
+  >
+    <thead>
+      <tr>
+        <th data-priority="1">Product ID</th>
+        <th data-priority="2">Product Name</th>
+        <th data-priority="3">Brand</th>
+        <th data-priority="4">No of Stocks</th>
+        <th data-priority="5">Price</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for product in product %}
+      <tr>
+        <td>{{product.id}}</td>
+        <td>{{product.productname}}</td>
+        <td>{{product.brand}}</td>
+        <td>{{product.no_stocks}}</td>
+        <td>{{product.price}}</td>
+        <td class="flex justify-end">
+          <button
+            class="button bg-indigo-500 p-3 rounded-lg text-white hover:bg-indigo-400 text-white font-bold py-2 px-4 rounded mr-3"
+            data-modal="product-view-{{product.id}}"
+          >
+            View
+          </button>
+          <button
+            class="button bg-indigo-500 p-3 rounded-lg text-white hover:bg-indigo-400 text-white font-bold py-2 px-4 rounded"
+            data-modal="product-delete-{{product.id}}"
+          >
+            Delete
+          </button>
+        </td>
+      </tr>
+      <!-- Modal View-->
+      <div id="product-view-{{product.id}}" class="modal">
+        <div class="modal-content py-4 text-left px-6">
+          <div class="flex justify-between items-center pb-3">
+            <div class="flex justify-center">
+              <div class="text-3xl font-bold uppercase tracking-wide">
+                {{product.productname}}
+              </div>
+              <div>
+                <a
+                  href="{% url 'dashboard-update-prod' product.id %}"
+                  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-3 rounded mt-2 ml-3"
+                  type="button"
+                  >Update</a
+                >
+              </div>
+            </div>
+            <div class="cursor-pointer z-50">
+              <a class="close">&times;</a>
+            </div>
+          </div>
+
+          <!--Modal Body-->
+          <div
+            class="bg-cover bg-center h-56 p-4"
+            style="background-image: url(https://via.placeholder.com/450x450)"
+          >
+            <div class="flex justify-end">
+              <svg
+                class="h-6 w-6 text-white fill-current"
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  d="M12.76 3.76a6 6 0 0 1 8.48 8.48l-8.53 8.54a1 1 0 0 1-1.42 0l-8.53-8.54a6 6 0 0 1 8.48-8.48l.76.75.76-.75zm7.07 7.07a4 4 0 1 0-5.66-5.66l-1.46 1.47a1 1 0 0 1-1.42 0L9.83 5.17a4 4 0 1 0-5.66 5.66L12 18.66l7.83-7.83z"
+                ></path>
+              </svg>
+            </div>
+          </div>
+          <div class="p-4">
+            <div>
+              <span class="text-gray-700 text-sm">Brand:</span>
+              <span class="text-l text-black font-semibold ml-1"
+                >{{product.brand}}</span
+              >
+            </div>
+            <p class="text-3xl text-gray-900 font-semibold">
+              ${{product.price}}
+            </p>
+          </div>
+          <div class="flex p-4 border-t border-gray-300 text-gray-700">
+            <div class="flex-1 inline-flex items-center">
+              <span
+                class="dot"
+                style="background-color: {{product.color}}"
+              ></span>
+              <p>
+                <span class="text-gray-900 font-bold ml-1">
+                  {{product.color}}</span
+                >
+              </p>
+            </div>
+            <div class="flex-1 inline-flex items-center">
+              <p>
+                <span class="text-gray-900 font-bold"
+                  >Size: {{product.size}}</span
+                >
+              </p>
+            </div>
+          </div>
+          <div class="px-4 pt-3 pb-4 border-t border-gray-300 bg-gray-100">
+            <span
+              class="text-xs uppercase font-bold text-gray-600 tracking-wide"
+            >
+              Number of Stocks
+            </span>
+            <span class="font-bold text-gray-900 ml-1">
+              {{product.no_stocks}}
+            </span>
+          </div>
+          <div class="flex justify-end pt-2">
+            <button
+              class="modal-close px-4 bg-indigo-500 p-3 rounded-lg text-white hover:bg-indigo-400"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Modal Delete-->
+      <div id="product-delete-{{product.id}}" class="modal">
+        <div class="modal-content py-4 text-left px-6">
+          <div class="flex justify-between items-center pb-3">
+            <div class="text-2xl font-bold uppercase">Delete Record</div>
+            <div class="cursor-pointer z-50">
+              <a class="close">&times;</a>
+            </div>
+          </div>
+
+          <!--Modal Body-->
+          <form action="" method="POST">
+            {% csrf_token %}
+            <div class="p-4">
+              <input
+                type="text"
+                name="productid"
+                value="{{product.id}}"
+                hidden
+              />
+              Are you sure you want to delete this record?
+            </div>
+            <div class="flex justify-end pt-2">
+              <button
+                class="modal-close px-4 bg-indigo-500 p-3 rounded-lg text-white hover:bg-indigo-400 mr-3"
+              >
+                No
+              </button>
+              <button
+                type="submit"
+                name="btnDelete"
+                class="modal-close px-4 bg-red-500 p-3 rounded-lg text-white hover:bg-red-400"
+              >
+                Yes
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- jQuery -->
+<script
+  type="text/javascript"
+  src="https://code.jquery.com/jquery-3.5.1.js"
+></script>
+<script src="https://cdn.jsdelivr.net/gh/linways/table-to-excel@v1.0.4/dist/tableToExcel.js"></script>
+
+<!--Datatables -->
+<script src="https://cdn.datatables.net/buttons/1.6.2/js/dataTables.buttons.min.js"></script>
+<script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+<!-- <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js%22%3E"></script> -->
+
+<script>
+  $(document).ready(function () {
+    $("#table").DataTable();
+
+    $("#btnExport").click(function () {
+      let table = document.getElementsByTagName("table");
+      TableToExcel.convert(table[0], {
+        // html code may contain multiple tables so here we are refering to 1st table tag
+        name: `product.xlsx`, // fileName you could use any name
+        sheet: {
+          name: "Sheet 1", // sheetName
+        },
+      });
+    });
+  });
+</script>
+
+<script>
+  (function iife() {
+    "use strict";
+    function closestEl(el, selector) {
+      var doc = el.document || el.ownerDocument;
+      var matches = doc.querySelectorAll(selector);
+      var i;
+      while (el) {
+        i = matches.length - 1;
+        while (i >= 0) {
+          if (matches.item(i) === el) {
+            return el;
+          }
+          i -= 1;
+        }
+        el = el.parentElement;
+      }
+      return el;
+    }
+    var modalBtns = document.querySelectorAll(".button");
+    modalBtns.forEach(function addBtnClickEvent(btn) {
+      btn.onclick = function showModal() {
+        var modal = btn.getAttribute("data-modal");
+        document.getElementById(modal).style.display = "block";
+      };
+    });
+
+    var closeBtns = document.querySelectorAll(".close");
+    closeBtns.forEach(function addCloseClickEvent(btn) {
+      btn.onclick = function closeModal() {
+        var modal = closestEl(btn, ".modal");
+        modal.style.display = "none";
+      };
+    });
+    var closeBtns = document.querySelectorAll(".modal-close");
+    closeBtns.forEach(function addCloseClickEvent(btn) {
+      btn.onclick = function closeModal() {
+        var modal = closestEl(btn, ".modal");
+        modal.style.display = "none";
+      };
+    });
+
+    window.onclick = function closeOnClick(event) {
+      if (event.target.className === "modal") {
+        event.target.style.display = "none";
+      }
+    };
+  })();
+</script>
+
+{% endblock content %}
